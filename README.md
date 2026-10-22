@@ -1,286 +1,87 @@
-# Mike Legal Workflows
+# Rheseus
 
-Public workflow definitions for Mike. We are open sourcing the workflows
-available in Mike so that people can contribute improvements and use them with
-the agent harness of their choice. The workflows follow the
-[`SKILL.md` Agent Skills specification](https://agentskills.io/specification)
-used by popular agent harnesses, making them straightforward to adapt and reuse.
+Portable legal workflows for source-supported review, concrete resolutions and
+concise writing. Version **0.1.0**.
 
-The repository has two top-level workflow collections:
+Rheseus is a fork of [Mike Workflows](https://github.com/open-legal-products/mike-workflows).
+It adds two separately named packs while retaining the upstream workflows,
+history and license notices. It is a workflow library with an optional offline
+text-comparison utility. It does not deploy the Mike application or a legal
+database. See [upstream documentation](UPSTREAM.md).
 
-- `assistant-workflows/` contains assistant workflows.
-- `tabular-review-workflows/` contains tabular review workflows.
+## Workflows
 
-System and add-on workflows use the same simple folder structure. Their
-availability is declared in `SKILL.md` rather than encoded through
-additional directory nesting.
+| Workflow | Use |
+| --- | --- |
+| [Matter Review](assistant-workflows/rheseus-pack/rheseus-matter-review/SKILL.md) | Analyze a supplied matter, reconcile competing proposals and recommend a supported resolution. |
+| [Factor Resolution](assistant-workflows/rheseus-pack/rheseus-factor-resolution/SKILL.md) | Produce punchy factor → resolution bullets and a short email without losing material conditions. |
+| [Contract Review](assistant-workflows/rheseus-pack/rheseus-contract-review/SKILL.md) | Review the complete available contract package, propose language and fallbacks, and identify evidence dependencies. |
+| [Free Authority Audit](assistant-workflows/rheseus-pack/rheseus-free-authority-audit/SKILL.md) | Check source identity, quotations, proposition support, authority weight and the scope of subsequent-treatment research. |
+| [Evidence Review](tabular-review-workflows/rheseus-pack/rheseus-evidence-review/SKILL.md) | Extract document-level terms and gaps into a source-anchored matrix. |
 
-## Structure
+The assistant and tabular packs have separate manifests under their respective
+collections. Existing upstream identifiers and defaults are unchanged.
 
-```text
-mike-legal-workflows/
-  assistant-workflows/
-    <workflow-id>/
-      SKILL.md
-    <pack-id>-pack/
-      pack.yaml
-      <workflow-id>/
-        SKILL.md
+## Use locally
 
-  tabular-review-workflows/
-    <workflow-id>/
-      SKILL.md
-      table-columns.yaml
-    <pack-id>-pack/
-      pack.yaml
-      <workflow-id>/
-        SKILL.md
-        table-columns.yaml
+Keep the repository layout intact so that workflow links to shared documentation
+and optional tools resolve. Give a compatible assistant the selected workflow
+file and explicitly identify the documents and research sources it may use.
+These files do not authorize discovery of additional local client material.
+See the [review standard](docs/REVIEW_STANDARD.md).
 
-  workflow-schema/
-    workflow-metadata.schema.yaml
-    table-columns.schema.yaml
-    pack.schema.yaml
-    tabular-review-instructions.md
-    generate-tabular-skills.py
-    validate-workflows.py
+Within Mike, tabular runs currently consume `table-columns.yaml` with system
+prompts rather than the tabular skill's Markdown body. The Rheseus columns
+therefore carry the relevant source restrictions and evidence-status rules
+themselves. Retain the column file with the skill. Runtime import and execution
+in Mike or another assistant have not been tested in this release; metadata and
+repository compatibility have been validated.
+
+The skills are provider-neutral. No API key or paid subscription is required to
+read them or run the offline utility. Research access and model execution depend
+on the chosen environment. Free-source preferences do not imply unlimited API
+access, complete coverage or comprehensive citator capability.
+
+## Offline quotation check
+
+Python 3.10+ is sufficient for the utility and its tests:
+
+```sh
+python3 tools/verify_quotations.py examples/quotations/manifest.json
+python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-Ordinary workflow folders are kept flat directly under the appropriate
-top-level collection. Only workflows that belong to a pack are nested inside
-their pack folder.
+The committed example is fictional. The utility compares only explicitly listed
+UTF-8 text files, makes no network calls and does not modify its inputs. A match
+does not establish source authenticity, legal support or current validity.
+See [inputs, normalization and result meanings](docs/QUOTATION_TOOL.md).
 
-## Authoring Principles
+## Development and validation
 
-Keep skills lightweight and focused instead of making them overly complicated.
-Models are increasingly capable of handling general reasoning on their own, so
-skill instructions should provide only the workflow-specific context,
-constraints, and steps needed to produce a reliable result. Avoid unnecessary
-explanation, repetition, and prescriptive detail to keep workflows
-token-efficient.
+For isolated development dependencies and repository-wide checks:
 
-Skills should not include CLI commands or commands specific to any particular
-agent harness. Describe the intended action in harness-neutral language so the
-workflow remains portable across compatible environments.
-
-## System and Add-on Workflows
-
-Every `SKILL.md` declares a `mike-availability` value inside its YAML
-frontmatter metadata:
-
-```yaml
-metadata:
-  mike-availability: "system"
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python workflow-schema/validate-workflows.py
+.venv/bin/python tools/validate_schemas.py
+.venv/bin/python -m unittest discover -s workflow-schema -p 'test_*.py'
+.venv/bin/python -m unittest discover -s tests -p 'test_*.py'
 ```
 
-Use `system` for trusted workflows that ship with Mike and appear as
-non-editable system workflows. Use `add-on` for workflows that users can
-optionally install or copy into their own workspace:
+The upstream tabular generator remains available. If changing its canonical
+instruction block, regenerate the skills and inspect the resulting diff as
+described in [UPSTREAM.md](UPSTREAM.md). CI checks generated consistency,
+metadata, schema documents, columns, manifests and tests.
 
-```yaml
-metadata:
-  mike-availability: "add-on"
-```
+## Scope and provenance
 
-This explicit metadata is the source of truth. Folder names should describe
-what a workflow does, not how it is distributed.
+The new workflows contain methods, not client facts or jurisdiction-specific
+compliance approvals. The contract workflow includes a regulated-services lens,
+but actual rules must be researched for the chosen jurisdiction, date and facts.
 
-## Workflow Types
-
-### Assistant Workflows
-
-Assistant workflows contain metadata in `SKILL.md` YAML frontmatter and
-instructions in the Markdown body.
-
-Assistant workflows can prompt users for additional information or document
-uploads when needed. For example, a drafting workflow can ask the user to
-provide a template or precedent before continuing. Mike supports these
-interactive requests as part of the workflow.
-
-### Tabular Review Workflows
-
-Tabular review workflows contain metadata in `SKILL.md` YAML frontmatter,
-workflow-level instructions in the Markdown body, and column definitions in
-`table-columns.yaml`.
-
-Mike does not currently use the instructions in a tabular review workflow's
-`SKILL.md` when running the workflow. Users trigger tabular review runs directly,
-and Mike applies fixed system prompts together with the workflow's
-`table-columns.yaml`. The results are rendered as an interactive table in the
-Mike application UI rather than having an agent generate the presentation on
-the fly.
-
-The `SKILL.md` is included to describe the workflow and ensure that it remains
-portable to other agent harnesses that use skill-based instructions. Outside
-Mike, the skill instructs the agent to produce an exportable Excel file and to
-fall back to a Markdown table when Excel output is unavailable.
-
-The canonical baseline is maintained in
-[`workflow-schema/tabular-review-instructions.md`](workflow-schema/tabular-review-instructions.md).
-Every tabular review `SKILL.md` should include these instructions and may add
-subject-specific guidance in a separate section where needed. After changing
-the canonical baseline, regenerate the tabular skill instructions with:
-
-```bash
-python3 workflow-schema/generate-tabular-skills.py
-```
-
-The `mike-type` metadata field must agree with the top-level collection:
-
-```yaml
-metadata:
-  mike-type: "assistant"
-```
-
-or:
-
-```yaml
-metadata:
-  mike-type: "tabular"
-```
-
-## Packs
-
-A pack is a named bundle of add-on workflows of the same type. Pack folders
-live in the relevant workflow collection and must end in `-pack` so they are
-easy for both people and Mike to identify.
-
-```text
-assistant-workflows/
-  commercial-drafting-pack/
-    pack.yaml
-    draft-service-agreement/
-      SKILL.md
-    draft-nda/
-      SKILL.md
-```
-
-The pack's `pack.yaml` lists its direct child workflow folders:
-
-```yaml
-$schema: "../../workflow-schema/pack.schema.yaml"
-id: "commercial-drafting"
-title: "Commercial Drafting"
-description: "Add-on workflows for drafting commercial agreements."
-publisher:
-  name: "Mike"
-license: "MIT"
-version: "1.0.0"
-practice: "General Transactions"
-workflows:
-  - "draft-service-agreement"
-  - "draft-nda"
-required_connectors: []
-```
-
-Packs may optionally declare a `practice`, a `jurisdiction`, or both to
-describe the bundle. These values are non-empty strings when present.
-
-Each listed directory must exist directly inside the pack folder, and each
-workflow in a pack must declare `mike-availability: "add-on"` inside its
-`metadata`. Packs should not contain system workflows. Installing a pack
-installs all workflows listed in its manifest.
-
-The pack `id` is immutable after publication and must match the pack folder name
-without its `-pack` suffix. For example, `commercial-drafting-pack/` uses
-`"id": "commercial-drafting"`.
-
-Packs are type-specific: an assistant pack belongs in `assistant-workflows/`,
-while a tabular review pack belongs in `tabular-review-workflows/`. This keeps
-the repository flat and avoids another cross-cutting directory hierarchy.
-
-## Skill Frontmatter
-
-Each workflow has a `SKILL.md` file with YAML frontmatter followed by Markdown
-instructions. To remain portable across compatible agent harnesses, the
-frontmatter uses the standard Agent Skills fields. `name` and `description` are
-required by the open specification; `license` and `metadata` are also required
-for workflows in this repository.
-
-Only fields whose meaning is specific to Mike use the `mike-` prefix. General
-fields such as `version`, `author`, `language`, `practice`, and `jurisdictions`
-remain unprefixed. Metadata values are strings for compatibility with the Agent
-Skills specification. Use the author or publishing organisation's name for
-`author`.
-
-```yaml
----
-name: "nda-review"
-description: "Review an NDA and identify material legal and commercial issues."
-license: "MIT"
-metadata:
-  version: "1.0.0"
-  author: "Open Legal Products"
-  language: "English"
-  mike-display-name: "NDA Review"
-  mike-type: "assistant"
-  mike-availability: "system"
-  practice: "General Transactions"
-  jurisdictions: "General"
----
-```
-
-The workflow folder and the `name` field must both match the lowercase,
-hyphenated form of `metadata.mike-display-name`. For example, a Mike display
-name of `Credit Agreement Review` uses the folder
-`credit-agreement-review/` and `name: "credit-agreement-review"`. Keep these
-identifiers stable once published. Because the identifier is derived from the
-display name, treat `mike-display-name` as immutable after publication. A
-breaking rename requires an explicit migration or alias in the consuming
-application.
-
-## Reference Documents
-
-Assistant workflows may bundle document templates and other reference
-documents in the standard Agent Skills `assets/` directory:
-
-```text
-assistant-workflows/
-  draft-service-agreement/
-    SKILL.md
-    assets/
-      service-agreement-template.docx
-```
-
-Reference each document directly from the `SKILL.md` body using its relative
-path:
-
-```markdown
-Use the bundled template at `assets/service-agreement-template.docx` as the
-starting document.
-```
-
-Reference documents are currently supported only for assistant workflows.
-Every bundled `.docx` file must be located under `assets/` and referenced by
-`SKILL.md`; no additional metadata declaration is required.
-
-Tabular review `table-columns.yaml` files use:
-
-```yaml
-$schema: "../../workflow-schema/table-columns.schema.yaml"
-```
-
-For a tabular workflow inside a pack, use:
-
-```yaml
-$schema: "../../../workflow-schema/table-columns.schema.yaml"
-```
-
-## Validation
-
-Validate workflow metadata, canonical tabular instructions, column formats,
-indexes, names, and tags with:
-
-```bash
-python3 workflow-schema/validate-workflows.py
-```
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for authoring and validation rules,
-[PROVENANCE.md](PROVENANCE.md) for third-party licensing requirements, and
-[VERSIONING.md](VERSIONING.md) for workflow and pack versioning.
-
-## License
-
-MIT License. See [LICENSE](LICENSE).
+Rheseus additions are MIT licensed; upstream and more specific third-party
+notices remain applicable. See [LICENSE](LICENSE), [upstream provenance policy](PROVENANCE.md),
+[Rheseus provenance](docs/RHESEUS_PROVENANCE.md) and the [build/evaluation record](docs/BUILD.md).
+No deployment, global skill installation or external matter upload is part of
+this release.

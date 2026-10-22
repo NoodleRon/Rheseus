@@ -1,0 +1,7 @@
+{
+  "authorities": [{"id": "example", "file": "source.txt"}],
+  "quotations": [
+    {"id": "q1", "authority_id": "example", "text": "The owner may not assign."},
+    {"id": "q2", "authority_id": "example", "text": "The \"fee\" is due - today."}
+  ]
+}

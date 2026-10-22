@@ -1,0 +1,15 @@
+$schema: "../../workflow-schema/pack.schema.yaml"
+id: "rheseus"
+title: "Rheseus Legal Workflows"
+description: "Source-bounded matter and contract review, concise resolutions and emails, and free-source authority checks."
+publisher:
+  name: "Rheseus"
+license: "MIT"
+version: "0.1.0"
+practice: "Legal Research and Transactions"
+workflows:
+  - "rheseus-matter-review"
+  - "rheseus-factor-resolution"
+  - "rheseus-contract-review"
+  - "rheseus-free-authority-audit"
+required_connectors: []

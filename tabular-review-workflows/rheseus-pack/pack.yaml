@@ -1,0 +1,12 @@
+$schema: "../../workflow-schema/pack.schema.yaml"
+id: "rheseus"
+title: "Rheseus Evidence Extraction"
+description: "Document-level extraction with source anchors, instrument status and explicit evidence gaps."
+publisher:
+  name: "Rheseus"
+license: "MIT"
+version: "0.1.0"
+practice: "Commercial and Corporate"
+workflows:
+  - "rheseus-evidence-review"
+required_connectors: []
